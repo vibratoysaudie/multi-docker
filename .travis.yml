@@ -1,0 +1,23 @@
+sudo: required
+services:
+  - docker
+before_install:
+  # build docker image and tag it with docker name
+  - docker build -t vsysaudie/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run -e CI=true vsysaudie/react-test npm test
+
+after_success:
+  # b uild images from Dockerfile for each container
+  - docker build -t vsysaudie/multi-client ./client
+  - docker build -t vsysaudie/multi-nginx ./nginx
+  - docker build -t vsysaudie/multi-server ./server
+  - docker build -t vsysaudie/multi-worker ./worker
+  # login to docker cli with 'docker login' with one line
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # take the images and push them to dockerhub
+  - docker push vsysaudie/multi-client
+  - docker push vsysaudie/multi-nginx
+  - docker push vsysaudie/multi-server
+  - docker push vsysaudie/multi-worker
